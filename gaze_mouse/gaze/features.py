@@ -16,6 +16,7 @@ FEATURE_SLICES = {
     "distance": slice(8, 9),  # camera distance in mm
 }
 FEATURE_DIM = 9
+PITCH_INDEX, YAW_INDEX, DISTANCE_INDEX = 4, 5, 8
 
 
 def select_features(features: np.ndarray, groups: list[str]) -> np.ndarray:

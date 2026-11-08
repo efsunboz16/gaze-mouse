@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from gaze_mouse.gaze.features import select_features
+from gaze_mouse.gaze.features import DISTANCE_INDEX, PITCH_INDEX, YAW_INDEX, select_features
 
 
 def _scale_params(z: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -32,6 +32,8 @@ class GazeModel:
     poly_std: np.ndarray | None
     coef: np.ndarray  # Dx2
     intercept: np.ndarray  # 2
+    head_reference: np.ndarray | None = None  # calibration (pitch, yaw) in radians
+    mm_per_px: float | None = None
 
     def _design(self, features: np.ndarray) -> np.ndarray:
         z = (select_features(features, self.feature_groups) - self.mean) / self.std
@@ -41,7 +43,17 @@ class GazeModel:
 
     def predict(self, features: np.ndarray) -> np.ndarray:
         """Map Nx9 full feature vectors to Nx2 screen pixels."""
-        return self._design(features) @ self.coef + self.intercept
+        predicted = self._design(features) @ self.coef + self.intercept
+        if self.head_reference is None:
+            return predicted
+        # A head turn of d radians shifts the gaze point by about distance * d on the screen.
+        # Signs were measured on recorded sessions; the regression cannot learn them from a still head.
+        pitch, yaw = self.head_reference
+        gain = features[:, DISTANCE_INDEX] / self.mm_per_px
+        return predicted + np.column_stack([
+            (features[:, YAW_INDEX] - yaw) * gain,
+            (features[:, PITCH_INDEX] - pitch) * gain,
+        ])
 
     def to_dict(self) -> dict[str, Any]:
         def lst(a: np.ndarray | None):
@@ -52,6 +64,7 @@ class GazeModel:
             "mean": lst(self.mean), "std": lst(self.std),
             "poly_mean": lst(self.poly_mean), "poly_std": lst(self.poly_std),
             "coef": lst(self.coef), "intercept": lst(self.intercept),
+            "head_reference": lst(self.head_reference), "mm_per_px": self.mm_per_px,
         }
 
     @classmethod
@@ -63,6 +76,7 @@ class GazeModel:
             data["feature_groups"], data["degree"], data["alpha"],
             arr(data["mean"]), arr(data["std"]), arr(data["poly_mean"]), arr(data["poly_std"]),
             arr(data["coef"]), arr(data["intercept"]),
+            arr(data.get("head_reference")), data.get("mm_per_px"),
         )
 
 

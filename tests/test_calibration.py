@@ -76,6 +76,44 @@ def test_model_roundtrip_through_profile(tmp_path):
     assert restored.predict(features_for(GRID)) == pytest.approx(original.predict(features_for(GRID)))
 
 
+def compensated_model() -> GazeModel:
+    model = fit_gaze_model(features_for(GRID), GRID, ["iris"], 1, 1e-6)
+    model.head_reference = np.array([0.1, -0.2])
+    model.mm_per_px = 0.2
+    return model
+
+
+def test_head_correction_is_zero_at_calibration_pose():
+    f = features_for(np.array([[300.0, 700.0]]))
+    f[:, 4:6] = [0.1, -0.2]
+    f[:, 8] = 500.0
+    assert compensated_model().predict(f) == pytest.approx(np.array([[300.0, 700.0]]), abs=0.5)
+
+
+def test_head_correction_maps_pitch_to_y_and_yaw_to_x():
+    f = features_for(np.array([[300.0, 700.0]]))
+    f[:, 4:6] = [0.1 + 0.01, -0.2 + 0.02]  # pitch +0.01 rad, yaw +0.02 rad
+    f[:, 8] = 500.0  # gain = 500 / 0.2 = 2500 px per radian
+    assert compensated_model().predict(f) == pytest.approx(np.array([[350.0, 725.0]]), abs=0.5)
+
+
+def test_head_correction_survives_profile_roundtrip(tmp_path):
+    original = compensated_model()
+    path = tmp_path / "user.yaml"
+    save_profile(path, {"gaze_model": original.to_dict()})
+    restored = GazeModel.from_dict(load_profile(path)["gaze_model"])
+    f = features_for(GRID)
+    f[:, 4:6] = [0.3, 0.1]
+    f[:, 8] = 600.0
+    assert restored.predict(f) == pytest.approx(original.predict(f))
+
+
+def test_profile_without_head_fields_still_loads():
+    data = fit_gaze_model(features_for(GRID), GRID, ["iris"], 1, 1.0).to_dict()
+    del data["head_reference"], data["mm_per_px"]
+    assert GazeModel.from_dict(data).head_reference is None
+
+
 def test_pursuit_starts_at_center_and_stays_inside_margin():
     path = PursuitPath(1000, 500, 0.1, 8.0, (1, 2))
     assert path.at(0.0) == (500, 250)
@@ -247,6 +285,16 @@ def test_click_estimate_respects_window_and_target_boundaries():
     assert old_frame[1].tolist() == [0.0, 0.0]
     other_target = click_point_estimates(predictions[1:], np.array([0, 33]) * MS, np.array([0, 1]), 300)
     assert other_target[1].tolist() == [900.0, 900.0]
+
+
+def test_fit_variant_uses_training_pose_as_head_reference():
+    samples = calibration_samples([(300, 300)])
+    samples["features"][:9, 4:6] = [0.2, -0.1]  # training frames
+    samples["features"][9:, 4:6] = [0.9, 0.9]  # validation frames must not move the reference
+    model = fit_variant(samples, CAL, 0.7, ["iris"], "ridge", False, 0.2)
+    assert model.head_reference == pytest.approx(np.array([0.2, -0.1]), abs=1e-6)
+    assert model.mm_per_px == 0.2
+    assert fit_variant(samples, CAL, 0.7, ["iris"], "ridge", False).head_reference is None
 
 
 def test_gate_is_driven_by_click_rate_not_raw_frames():

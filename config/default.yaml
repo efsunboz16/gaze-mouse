@@ -67,6 +67,7 @@ calibration:
   validation_click_window_ms: 300  # causal median window standing in for the click position
   validation_min_hit_rate: 0.8 # decision gate: share of click-position estimates inside the box
   max_validation_error_deg: 3.0
+  head_compensation: true      # geometric pitch/yaw correction relative to the calibration pose
   features: [iris]             # groups: iris, pose, ear, distance
   compare_features: [[iris], [iris, ear], [iris, pose], [iris, pose, distance]]  # reported after each run
   regressor: ridge             # ridge | poly2

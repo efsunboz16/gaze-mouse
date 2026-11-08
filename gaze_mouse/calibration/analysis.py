@@ -8,6 +8,7 @@ import numpy as np
 
 from gaze_mouse.calibration.model import GazeModel, fit_gaze_model
 from gaze_mouse.calibration.procedure import Phase
+from gaze_mouse.gaze.features import PITCH_INDEX, YAW_INDEX
 
 _DEGREES = {"ridge": 1, "poly2": 2}
 
@@ -50,6 +51,14 @@ def training_set(
     return features, targets, weights
 
 
+def reference_pose(samples: dict[str, np.ndarray], cal: dict[str, Any], openness_ratio: float) -> np.ndarray:
+    """Median (pitch, yaw) over the usable point and pursuit frames."""
+    mask = usable_mask(samples, Phase.POINTS, cal["discard_first_ms"], openness_ratio) | usable_mask(
+        samples, Phase.PURSUIT, cal["pursuit_discard_first_ms"], openness_ratio
+    )
+    return np.median(samples["features"][mask][:, [PITCH_INDEX, YAW_INDEX]], axis=0).astype(np.float64)
+
+
 def fit_variant(
     samples: dict[str, np.ndarray],
     cal: dict[str, Any],
@@ -57,9 +66,15 @@ def fit_variant(
     groups: list[str],
     regressor: str,
     use_pursuit: bool,
+    head_mm_per_px: float | None = None,
 ) -> GazeModel:
+    """Fit one configuration; a non-None head_mm_per_px enables the head correction."""
     features, targets, weights = training_set(samples, cal, openness_ratio, use_pursuit)
-    return fit_gaze_model(features, targets, groups, _DEGREES[regressor], cal["ridge_alpha"], weights)
+    model = fit_gaze_model(features, targets, groups, _DEGREES[regressor], cal["ridge_alpha"], weights)
+    if head_mm_per_px is not None:
+        model.head_reference = reference_pose(samples, cal, openness_ratio)
+        model.mm_per_px = head_mm_per_px
+    return model
 
 
 @dataclass(frozen=True)
