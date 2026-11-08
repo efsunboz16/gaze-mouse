@@ -45,19 +45,14 @@ def summarize(cfg: dict[str, Any], samples: dict[str, np.ndarray], mm_per_px: fl
     ratio = cfg["fixation"]["blink_mask"]["openness_ratio"]
     min_rate = cal["validation_min_hit_rate"]
 
-    head = mm_per_px if cal["head_compensation"] else None
-    print(f"\n{'features':<24}{'regressor':>10}{'pursuit':>9}{'px':>8}{'|dx|':>8}{'|dy|':>8}{'deg':>7}{'hit%':>8}{'click%':>8}{'head%':>8}")
+    print(f"\n{'features':<24}{'regressor':>10}{'pursuit':>9}{'px':>8}{'|dx|':>8}{'|dy|':>8}{'deg':>7}{'hit%':>8}{'click%':>8}")
     for groups, regressor, pursuit in itertools.product(cal["compare_features"], ("ridge", "poly2"), (False, True)):
         m = evaluate(fit_variant(samples, cal, ratio, groups, regressor, pursuit), samples, cal, ratio, mm_per_px)
-        with_head = "-"  # the correction would double count a model that already sees the pose
-        if "pose" not in groups:
-            corrected = fit_variant(samples, cal, ratio, groups, regressor, pursuit, mm_per_px)
-            with_head = f"{100 * evaluate(corrected, samples, cal, ratio, mm_per_px).click_hit_rate:.1f}"
         print(f"{'+'.join(groups):<24}{regressor:>10}{str(pursuit):>9}{m.mean_px:>8.1f}"
               f"{m.mean_abs_dx_px:>8.1f}{m.mean_abs_dy_px:>8.1f}{m.mean_deg:>7.2f}{100 * m.hit_rate:>8.1f}"
-              f"{100 * m.click_hit_rate:>8.1f}{with_head:>8}")
+              f"{100 * m.click_hit_rate:>8.1f}")
 
-    model = fit_variant(samples, cal, ratio, cal["features"], cal["regressor"], cal["use_pursuit"], head)
+    model = fit_variant(samples, cal, ratio, cal["features"], cal["regressor"], cal["use_pursuit"])
     metrics = evaluate(model, samples, cal, ratio, mm_per_px)
     verdict = "GEÇTİ" if metrics.passes(min_rate) else "KALDI"
     lines = [
