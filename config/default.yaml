@@ -69,7 +69,7 @@ calibration:
   max_validation_error_deg: 3.0
   features: [iris]             # groups: iris, pose, ear, distance
   compare_features: [[iris], [iris, ear], [iris, pose], [iris, pose, distance]]  # reported after each run
-  regressor: ridge             # ridge | poly2
+  regressor: poly2             # ridge | poly2; poly2 can model horizontal gain changing with height
   ridge_alpha: 1.0
   implicit:
     enabled: true
@@ -96,7 +96,8 @@ eyelid:
   open_ratio: 0.80             # hysteresis: open above this
   natural_blink_max_ms: 400
   wink_min_ms: 200
-  long_wink_ms: 1000
+  long_wink_ms: 1500           # Phase 1 only (nothing uses long winks yet); revisit for dragging in Phase 2
+  wink_min_asymmetry: 0.15     # other eye minus closing eye at deepest closure; measured winks 0.22+, blinks 0.07 or less
   double_wink_window_ms: 600
   long_close_min_ms: 600
   long_close_max_ms: 1500

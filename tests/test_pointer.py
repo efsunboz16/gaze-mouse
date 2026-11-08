@@ -12,7 +12,7 @@ from gaze_mouse.gaze.features import FEATURE_DIM
 MS = 1_000_000
 FRAME_MS = 33
 EYELID = {
-    "close_ratio": 0.6, "open_ratio": 0.8, "wink_min_ms": 200, "long_wink_ms": 1000,
+    "close_ratio": 0.6, "open_ratio": 0.8, "wink_min_ms": 200, "long_wink_ms": 1500, "wink_min_asymmetry": 0.15,
     "click_lookback_ms": [150, 300],
 }
 BASE = 0.3
@@ -51,12 +51,39 @@ def test_short_closure_is_ignored():
 
 
 def test_long_wink_is_reserved_for_phase_2():
-    assert run(closure(31)) == []
+    assert run(closure(46)) == []
 
 
-def test_other_eye_partly_closing_during_wink_cancels_it():
-    pairs = [(OPEN, OPEN)] * 3 + [(CLOSED, OPEN)] * 4 + [(CLOSED, 0.75 * BASE)] + [(CLOSED, OPEN)] * 4 + [(OPEN, OPEN)]
+def test_slightly_uneven_eyes_narrowing_together_is_ignored():
+    pairs = closure(9, 0.45 * BASE, 0.59 * BASE)
     assert run(pairs) == []
+
+
+def test_just_enough_asymmetry_is_a_wink():
+    assert [e.side for e in run(closure(9, 0.45 * BASE, 0.61 * BASE))] == ["left"]
+
+
+def test_wink_longer_than_a_second_is_still_a_short_wink_in_phase_1():
+    assert [e.side for e in run(closure(31))] == ["left"]
+
+
+@pytest.mark.parametrize("own, other", [(0.51, 0.73), (0.43, 0.70), (0.43, 0.65), (0.58, 0.94)])
+def test_measured_left_winks_with_the_other_eye_narrowing(own, other):
+    assert [e.side for e in run(closure(9, own * BASE, other * BASE))] == ["left"]
+
+
+@pytest.mark.parametrize("own, other", [(0.46, 0.84), (0.42, 0.69), (0.26, 0.51), (0.47, 0.91), (0.41, 0.80)])
+def test_measured_right_winks_fire_only_for_the_winking_eye(own, other):
+    assert [e.side for e in run(closure(9, other * BASE, own * BASE))] == ["right"]
+
+
+@pytest.mark.parametrize("left, right", [(0.28, 0.24), (0.35, 0.28), (0.29, 0.22), (0.24, 0.29), (0.28, 0.35)])
+def test_measured_blinks_are_ignored(left, right):
+    assert run(closure(9, left * BASE, right * BASE)) == []
+
+
+def test_looking_down_narrows_both_eyes_without_a_click():
+    assert run(closure(15, 0.55 * BASE, 0.55 * BASE)) == []
 
 
 def test_hysteresis_band_does_not_reopen_the_eye():

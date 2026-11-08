@@ -2,6 +2,9 @@
 
 Phase 1 emits only short winks. Natural blinks close both eyes and are ignored;
 long winks are reserved for dragging and scrolling in Phase 2.
+
+The other eye narrows during a real wink, so a wink is told from a blink by how much
+more open the other eye is at the deepest point of the closure, not by a fixed level.
 """
 from __future__ import annotations
 
@@ -22,13 +25,15 @@ class WinkEvent:
 class _EyeState:
     closed: bool = False
     onset_ns: int = 0
-    other_eye_closed: bool = False
+    deepest_own: float = 0.0
+    other_at_deepest: float = 0.0
 
 
 class WinkClassifier:
     def __init__(self, cfg: dict[str, Any], baseline_left: float, baseline_right: float):
         self._close = cfg["close_ratio"]
         self._open = cfg["open_ratio"]
+        self._min_asymmetry = cfg["wink_min_asymmetry"]
         self._min_ms = cfg["wink_min_ms"]
         self._long_ms = cfg["long_wink_ms"]
         self._baselines = (baseline_left, baseline_right)
@@ -48,12 +53,15 @@ class WinkClassifier:
             own, other = ratios[index], ratios[1 - index]
             if not eye.closed:
                 if own < self._close:
-                    eye.closed, eye.onset_ns, eye.other_eye_closed = True, timestamp_ns, other < self._open
+                    eye.closed, eye.onset_ns = True, timestamp_ns
+                    eye.deepest_own, eye.other_at_deepest = own, other
                 continue
-            eye.other_eye_closed = eye.other_eye_closed or other < self._open
+            if own < eye.deepest_own:
+                eye.deepest_own, eye.other_at_deepest = own, other
             if own > self._open:
                 duration_ms = (timestamp_ns - eye.onset_ns) / 1e6
-                if not eye.other_eye_closed and self._min_ms <= duration_ms < self._long_ms:
+                asymmetric = eye.other_at_deepest - eye.deepest_own >= self._min_asymmetry
+                if asymmetric and self._min_ms <= duration_ms < self._long_ms:
                     event = WinkEvent(side, eye.onset_ns, timestamp_ns, duration_ms)
                 eye.closed = False
         return event
