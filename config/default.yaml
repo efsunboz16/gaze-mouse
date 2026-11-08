@@ -1,0 +1,114 @@
+# Default parameters. Values come from docs/mimari-raporu.md and are starting
+# points only: per-user values are measured during calibration and written to
+# profiles/<user>.yaml, which overrides this file.
+
+camera:
+  index: 0
+  backend: dshow               # dshow | msmf | auto; measured: dshow+MJPG steady ~28 fps, msmf bursty and dark
+  fourcc: MJPG                 # YUY2 reaches only ~13 fps at 720p on this camera; null keeps the driver default
+  width: 1280
+  height: 720
+  fps: 30
+  lock_exposure: true
+  lock_focus: true
+  buffer_frames: 3
+  warmup_frames: 30            # frames read before and after the exposure lock so brightness settles
+  exposure_manual_value: 0.25  # CAP_PROP_AUTO_EXPOSURE value requesting manual mode
+  exposure_auto_value: 0.75    # CAP_PROP_AUTO_EXPOSURE value restoring auto mode
+  exposure_lock_max_brightness_change: 0.25  # revert the lock if brightness shifts more than this ratio
+  max_read_failures: 30        # consecutive failed reads before the capture thread gives up
+
+landmarker:
+  model_path: models/face_landmarker.task
+  running_mode: VIDEO          # only VIDEO is implemented so far
+  num_faces: 1
+  min_face_detection_confidence: 0.5
+  min_face_presence_confidence: 0.5
+  min_tracking_confidence: 0.5
+  iris_diameter_mm: 11.7       # used for camera-distance estimate
+
+landmarks:
+  # Left/right follow MediaPipe's FACE_LANDMARKS_LEFT/RIGHT_* constants.
+  # Confirmed with a real wink for the first user on 2026-11-08; recheck per user in blink calibration.
+  ear_left: [362, 385, 387, 263, 373, 380]   # p1..p6
+  ear_right: [33, 160, 158, 133, 153, 144]   # p1..p6
+  iris_left: 473
+  iris_right: 468
+
+preview:
+  mirror: true
+  frame_timeout_s: 2.0
+  fps_window_s: 1.0
+  live_stats_window: 120       # frames behind the on-screen latency medians
+  session_stats_window: 18000  # frames kept for the end-of-run summary
+
+screen:
+  # Physical size and camera offset; measured once per machine.
+  width_mm: null
+  height_mm: null
+  camera_offset_mm: [0.0, 0.0] # camera position relative to top-center of the screen
+
+calibration:
+  points: 9                    # 13-16 for better accuracy
+  seconds_per_point: 1.5
+  discard_first_ms: 500        # saccade + settling
+  smooth_pursuit_seconds: 8
+  validation_points: 5
+  max_validation_error_deg: 3.0
+  regressor: ridge             # ridge | poly2
+  ridge_alpha: 1.0
+  implicit:
+    enabled: true
+    buffer_size: 200           # sliding window of click-confirmed samples
+    refit_every: 20
+
+filter:
+  one_euro:
+    min_cutoff_hz: 1.0         # lower until fixations stop jittering
+    beta: 0.0                  # raise x10 until fast gaze shifts stop lagging
+    d_cutoff_hz: 1.0
+
+fixation:
+  method: idt
+  dispersion_deg: 0.75         # 0.5-1.0
+  min_duration_ms: 150         # 100-200
+  blink_mask:
+    openness_ratio: 0.70       # gaze invalid below 70% of baseline openness
+    post_open_ms: 100
+
+eyelid:
+  # Thresholds are ratios of the user's open-eye baseline EAR.
+  close_ratio: 0.60            # hysteresis: closed below this
+  open_ratio: 0.80             # hysteresis: open above this
+  natural_blink_max_ms: 400
+  wink_min_ms: 200
+  long_wink_ms: 1000
+  double_wink_window_ms: 600
+  long_close_min_ms: 600
+  long_close_max_ms: 1500
+  pause_close_ms: 2000
+  click_lookback_ms: [150, 300] # fixation window before closure onset
+  use_blendshapes: true
+
+cursor:
+  snap_to_targets: false       # Phase 4
+  head_refine:
+    enabled: false             # Phase 4
+    px_per_deg: 15
+  magnifier:
+    enabled: false             # Phase 4
+    zoom: 2.5
+
+scroll:
+  edge_fraction: 0.15
+
+safety:
+  live: false                  # dry-run by default; --live enables real mouse events
+  kill_hotkey: "<ctrl>+<alt>+q"
+  corner_pause: true
+  min_face_confidence: 0.5
+
+logging:
+  record_raw_video: false
+  data_dir: data
+  profile_dir: profiles

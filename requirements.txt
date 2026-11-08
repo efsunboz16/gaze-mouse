@@ -1,0 +1,17 @@
+# Python 3.11 or 3.12
+# mediapipe 1.x pulls in opencv-contrib-python and numpy; do not also install opencv-python.
+mediapipe>=1.2
+numpy
+scikit-learn
+PyYAML
+pynput
+PyQt6
+pytest
+
+# Phase 3 (appearance-based gaze model)
+# onnxruntime
+# torch
+# torchvision
+
+# Phase 4 (snap-to-target on Windows)
+# uiautomation; sys_platform == "win32"
