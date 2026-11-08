@@ -18,4 +18,4 @@ macOS / Linux: `python3 -m venv .venv && source .venv/bin/activate`, sonra aynı
 
 ## Durum
 
-Faz 0 devam ediyor: canlı önizleme çalışıyor (`python -m tools.preview`), kayıt aracı henüz yok. Faz listesi ve çıkış ölçütleri `CLAUDE.md` içinde.
+Faz 0 tamamlandı: canlı önizleme (`python -m tools.preview`) ve oturum kaydı (`python -m tools.record --save`) çalışıyor. Faz listesi ve çıkış ölçütleri `CLAUDE.md` içinde.

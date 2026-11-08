@@ -90,7 +90,7 @@ Bu yapı bir hedef; dosyaları ihtiyaç oldukça oluştur, boş iskelet doldurma
 
 Her fazın başında plan yap ve kullanıcıya onaylat. Faz bitince ilgili kutuyu işaretle ve kısa not düş.
 
-- [ ] **Faz 0 — Altyapı:** kamera thread'i, FaceLandmarker, canlı önizleme (landmark'lar, iris merkezleri, EAR sol/sağ, eyeBlink skorları, fps ve gecikme), kayıt aracı (kare özellikleri + ekran hedefi + zaman damgası). Çıkış: 30 fps'te kararlı akış ve kaydedilmiş ilk oturum.
+- [x] **Faz 0 — Altyapı:** kamera thread'i, FaceLandmarker, canlı önizleme (landmark'lar, iris merkezleri, EAR sol/sağ, eyeBlink skorları, fps ve gecikme), kayıt aracı (kare özellikleri + ekran hedefi + zaman damgası). Çıkış: 30 fps'te kararlı akış ve kaydedilmiş ilk oturum. *Tamamlandı 2026-11-08: `data/session_20261108_112018`, 826 kare, 29,9 fps, %100 yüz, 1 düşen kare; iris ofseti–hedef korelasyonu x −0,989, y 0,943. Pozlama kilidi hâlâ tutarsız.*
 - [ ] **Faz 1 — MVP:** geometrik bakış (Kademe A) + 9 nokta kalibrasyon + doğrulama ekranı (hata ° ve px), 1€ filtresi, EAR tabanlı sol/sağ wink, overlay, `--live` ile fare olayları. Çıkış: ≥ 150 px düğmelere bakış + wink ile tıklama.
 - [ ] **Faz 2 — Göz kapağı katmanı:** kişisel kırpma kalibrasyonu, olay segmentasyonu, durum makinesi, kapanmada imleç dondurma, ilerleme halkası. Çıkış: 30 dk okuma/video oturumunda saatte ≤ 2 yanlış tık.
 - [ ] **Faz 3 — Görünüm tabanlı model:** normalizasyon, ETH-XGaze / L2CS / UniGaze ön eğitimli model, ONNX Runtime çıkarımı, kalibrasyon başlığı. Çıkış: ekran merkezinde ≤ 2° doğruluk.
@@ -102,9 +102,10 @@ Her fazın başında plan yap ve kullanıcıya onaylat. Faz bitince ilgili kutuy
 Komutlar proje kökünden, venv etkinken:
 
 - Önizleme: `python -m tools.preview` (`--duration N` süre sonunda özet yazar; `--no-window`, `--camera N`)
+- Oturum kaydı: `python -m tools.record --save` (tam ekran hedefler, `data/session_*/` altına `frames.npz` + `session.json`; `--save` olmadan hiçbir şey yazmaz, ham video hiç yazılmaz)
 - Testler: `python -m pytest`
 - Kalibrasyon, dry-run ve `--live`: Faz 1'de eklenecek.
 
-Kamera ölçümü (HD Webcam, 2026-11-08, 30 sn): DSHOW + MJPG ile 1280×720, kamera 29,9 fps, işleme 29,0 fps; çıkarım p50 7,8 ms, kare → ekran p50 15,4 / p95 45,5 ms (sensör gecikmesi hariç). `CAP_PROP_AUTO_EXPOSURE` ile manuel moda geçmek görüntüyü karartıyor (parlaklık 119,9 → 67,9), bu yüzden kilit geri alınıyor ve otomatik pozlama açık kalıyor. Otomatik odak kontrolü desteklenmiyor.
+Kamera ölçümü (HD Webcam, 2026-11-08, 30 sn): DSHOW + MJPG ile 1280×720, kamera 29,9 fps, işleme 29,0 fps; çıkarım p50 7,8 ms, kare → ekran p50 15,4 / p95 45,5 ms (sensör gecikmesi hariç). Pozlama kilidi tutarsız: `CAP_PROP_AUTO_EXPOSURE` ile manuel mod istendiğinde iki çalıştırmada parlaklık ~68'e düştü ve kilit geri alındı (119,9 ve 195,9'dan), ilk kayıtta ise değişmedi (203,0 → 203,1, `requested_unverified`). Kilidin gerçekten tutup tutmadığı bilinmiyor; her kaydın durumu `session.json` içindeki `camera` alanında. Otomatik odak kontrolü desteklenmiyor.
 
 Sol/sağ eşlemesi (2026-11-08, Efsun'un gerçek wink denemesi, aynalı önizleme): `default.yaml`'daki `ear_left`/`iris_left` ve `eyeBlinkLeft` kullanıcının anatomik sol gözüne karşılık geliyor; sağ taraf için de aynısı. Başka kullanıcılar için kırpma kalibrasyonundaki kontrol yine yapılmalı.

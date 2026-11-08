@@ -108,6 +108,15 @@ safety:
   corner_pause: true
   min_face_confidence: 0.5
 
+recording:
+  grid_cols: 3
+  grid_rows: 3
+  margin_fraction: 0.1         # distance of the outer targets from the screen edge
+  seconds_per_point: 1.5
+  repeats: 2                   # each repeat visits every grid position once, in shuffled order
+  countdown_s: 3
+  shuffle_seed: null           # null picks a random seed, stored with the session
+
 logging:
   record_raw_video: false
   data_dir: data
