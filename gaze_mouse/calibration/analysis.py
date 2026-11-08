@@ -70,13 +70,30 @@ class ValidationMetrics:
     mean_abs_dx_px: float
     mean_abs_dy_px: float
     mean_deg: float
-    hit_rate: float
+    hit_rate: float  # raw frames inside the box
+    click_hit_rate: float  # click-position estimates inside the box; this drives the gate
 
     def passes(self, min_hit_rate: float) -> bool:
-        return self.frames > 0 and self.hit_rate >= min_hit_rate
+        return self.frames > 0 and self.click_hit_rate >= min_hit_rate
 
     def to_dict(self) -> dict[str, float]:
         return asdict(self)
+
+
+def click_point_estimates(
+    predictions: np.ndarray, timestamps_ns: np.ndarray, seqs: np.ndarray, window_ms: float
+) -> np.ndarray:
+    """Causal median of the predictions in the window ending at each frame, within one target."""
+    window_ns = int(window_ms * 1e6)
+    estimates = np.empty_like(predictions)
+    for i in range(len(predictions)):
+        recent = (
+            (seqs == seqs[i])
+            & (timestamps_ns <= timestamps_ns[i])
+            & (timestamps_ns > timestamps_ns[i] - window_ns)
+        )
+        estimates[i] = np.median(predictions[recent], axis=0)
+    return estimates
 
 
 def evaluate(
@@ -90,8 +107,16 @@ def evaluate(
     mask = usable_mask(samples, Phase.VALIDATION, cal["discard_first_ms"], openness_ratio)
     if not mask.any():
         nan = float("nan")
-        return ValidationMetrics(0, nan, nan, nan, nan, nan, 0.0)
-    delta = model.predict(samples["features"][mask]) - samples["target_xy_px"][mask]
+        return ValidationMetrics(0, nan, nan, nan, nan, nan, 0.0, 0.0)
+    # The click window may reach back into frames that are excluded from the error metrics.
+    stream = (samples["phase"] == int(Phase.VALIDATION)) & np.isfinite(samples["features"]).all(axis=1)
+    predictions = model.predict(samples["features"][stream])
+    clicks = click_point_estimates(
+        predictions, samples["timestamp_ns"][stream], samples["seq"][stream], cal["validation_click_window_ms"]
+    )
+    in_stream = mask[stream]
+    targets = samples["target_xy_px"][mask]
+    delta = predictions[in_stream] - targets
     dist_px = np.linalg.norm(delta, axis=1)
     distance_mm = samples["distance_mm"][mask]
     half_box = cal["validation_hit_box_px"] / 2
@@ -103,4 +128,5 @@ def evaluate(
         mean_abs_dy_px=float(np.abs(delta[:, 1]).mean()),
         mean_deg=float(np.degrees(np.arctan2(dist_px * mm_per_px, distance_mm)).mean()),
         hit_rate=float((np.abs(delta) <= half_box).all(axis=1).mean()),
+        click_hit_rate=float((np.abs(clicks[in_stream] - targets) <= half_box).all(axis=1).mean()),
     )

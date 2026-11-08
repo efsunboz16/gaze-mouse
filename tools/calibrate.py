@@ -45,11 +45,12 @@ def summarize(cfg: dict[str, Any], samples: dict[str, np.ndarray], mm_per_px: fl
     ratio = cfg["fixation"]["blink_mask"]["openness_ratio"]
     min_rate = cal["validation_min_hit_rate"]
 
-    print(f"\n{'features':<24}{'regressor':>10}{'pursuit':>9}{'px':>8}{'|dx|':>8}{'|dy|':>8}{'deg':>7}{'hit%':>8}")
+    print(f"\n{'features':<24}{'regressor':>10}{'pursuit':>9}{'px':>8}{'|dx|':>8}{'|dy|':>8}{'deg':>7}{'hit%':>8}{'click%':>8}")
     for groups, regressor, pursuit in itertools.product(cal["compare_features"], ("ridge", "poly2"), (False, True)):
         m = evaluate(fit_variant(samples, cal, ratio, groups, regressor, pursuit), samples, cal, ratio, mm_per_px)
         print(f"{'+'.join(groups):<24}{regressor:>10}{str(pursuit):>9}{m.mean_px:>8.1f}"
-              f"{m.mean_abs_dx_px:>8.1f}{m.mean_abs_dy_px:>8.1f}{m.mean_deg:>7.2f}{100 * m.hit_rate:>8.1f}")
+              f"{m.mean_abs_dx_px:>8.1f}{m.mean_abs_dy_px:>8.1f}{m.mean_deg:>7.2f}{100 * m.hit_rate:>8.1f}"
+              f"{100 * m.click_hit_rate:>8.1f}")
 
     model = fit_variant(samples, cal, ratio, cal["features"], cal["regressor"], cal["use_pursuit"])
     metrics = evaluate(model, samples, cal, ratio, mm_per_px)
@@ -57,7 +58,8 @@ def summarize(cfg: dict[str, Any], samples: dict[str, np.ndarray], mm_per_px: fl
     lines = [
         f"Ortalama hata: {metrics.mean_px:.0f} px ({metrics.mean_deg:.2f}°)  |  p95: {metrics.p95_px:.0f} px",
         f"Yatay: {metrics.mean_abs_dx_px:.0f} px  |  Dikey: {metrics.mean_abs_dy_px:.0f} px",
-        f"{cal['validation_hit_box_px']} px kutu isabeti: %{100 * metrics.hit_rate:.1f}  "
+        f"{cal['validation_hit_box_px']} px kutu, ham kare isabeti: %{100 * metrics.hit_rate:.1f}",
+        f"Tık noktası isabeti ({cal['validation_click_window_ms']} ms medyan): %{100 * metrics.click_hit_rate:.1f}  "
         f"(kapı: %{100 * min_rate:.0f})  ->  {verdict}",
         "Çıkmak için bir tuşa bas",
     ]
@@ -112,7 +114,7 @@ def main() -> int:
             "validation": {**metrics.to_dict(), "passed": metrics.passes(cfg["calibration"]["validation_min_hit_rate"])},
             "camera": camera_info,
         })
-        print("\n".join(lines[:3]))
+        print("\n".join(lines[:4]))
         print(f"Profile: {directory / (args.user + '.yaml')}")
         exit_code["value"] = 0
         window.show_results(lines)

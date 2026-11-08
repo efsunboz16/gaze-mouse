@@ -3,7 +3,14 @@ import math
 import numpy as np
 import pytest
 
-from gaze_mouse.calibration.analysis import evaluate, fit_variant, training_set, usable_mask
+from gaze_mouse.calibration.analysis import (
+    ValidationMetrics,
+    click_point_estimates,
+    evaluate,
+    fit_variant,
+    training_set,
+    usable_mask,
+)
 from gaze_mouse.calibration.model import GazeModel, fit_gaze_model
 from gaze_mouse.calibration.procedure import CalibrationProcedure, Phase, PursuitPath
 from gaze_mouse.calibration.profile import load_profile, save_profile
@@ -14,7 +21,7 @@ from gaze_mouse.recording import Target
 SECOND = 1_000_000_000
 CAL = {
     "discard_first_ms": 500, "pursuit_discard_first_ms": 500, "pursuit_weight": 1.0,
-    "ridge_alpha": 1e-6, "validation_hit_box_px": 150,
+    "ridge_alpha": 1e-6, "validation_hit_box_px": 150, "validation_click_window_ms": 300,
 }
 
 
@@ -150,6 +157,7 @@ def samples_from(rows) -> dict:
         "ear_left": np.array([r[5] for r in rows], dtype=np.float32),
         "ear_right": np.array([r[5] for r in rows], dtype=np.float32),
         "distance_mm": np.full(len(rows), 600.0, dtype=np.float32),
+        "timestamp_ns": np.arange(len(rows), dtype=np.int64) * SECOND,
     }
 
 
@@ -216,6 +224,35 @@ def test_evaluate_reports_axes_degrees_and_box_misses():
     assert metrics.mean_abs_dx_px == pytest.approx(0.0, abs=0.5)
     assert metrics.mean_deg == pytest.approx(math.degrees(math.atan2(40.0, 600.0)), abs=0.05)
     assert metrics.hit_rate == 0.0 and not metrics.passes(0.8)
+
+
+MS = 1_000_000
+
+
+def test_click_estimate_rejects_a_single_outlier_frame():
+    predictions = np.array([[0.0, 0.0], [0.0, 0.0], [900.0, 900.0], [0.0, 0.0]])
+    estimates = click_point_estimates(predictions, np.arange(4) * 33 * MS, np.zeros(4, int), 300)
+    assert estimates[2].tolist() == [0.0, 0.0]
+
+
+def test_click_estimate_uses_only_past_frames():
+    predictions = np.array([[0.0, 0.0], [100.0, 100.0], [100.0, 100.0]])
+    estimates = click_point_estimates(predictions, np.arange(3) * 33 * MS, np.zeros(3, int), 300)
+    assert estimates[0].tolist() == [0.0, 0.0]
+
+
+def test_click_estimate_respects_window_and_target_boundaries():
+    predictions = np.array([[500.0, 500.0], [0.0, 0.0], [900.0, 900.0]])
+    old_frame = click_point_estimates(predictions[:2], np.array([0, 400]) * MS, np.zeros(2, int), 300)
+    assert old_frame[1].tolist() == [0.0, 0.0]
+    other_target = click_point_estimates(predictions[1:], np.array([0, 33]) * MS, np.array([0, 1]), 300)
+    assert other_target[1].tolist() == [900.0, 900.0]
+
+
+def test_gate_is_driven_by_click_rate_not_raw_frames():
+    metric = lambda raw, click: ValidationMetrics(10, 1.0, 1.0, 1.0, 1.0, 1.0, raw, click)
+    assert metric(0.5, 0.9).passes(0.8)
+    assert not metric(0.9, 0.5).passes(0.8)
 
 
 def test_evaluate_without_validation_frames_fails_gate():

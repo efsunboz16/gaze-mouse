@@ -64,7 +64,8 @@ calibration:
   pursuit_weight: 1.0          # total pursuit weight relative to the total weight of the points
   validation_positions: [[0.3, 0.3], [0.7, 0.3], [0.3, 0.7], [0.7, 0.7], [0.5, 0.3]]  # screen fractions, off the grid
   validation_hit_box_px: 150   # Phase 1 exit target size
-  validation_min_hit_rate: 0.8 # decision gate: share of validation frames inside the box
+  validation_click_window_ms: 300  # causal median window standing in for the click position
+  validation_min_hit_rate: 0.8 # decision gate: share of click-position estimates inside the box
   max_validation_error_deg: 3.0
   features: [iris]             # groups: iris, pose, ear, distance
   compare_features: [[iris], [iris, ear], [iris, pose], [iris, pose, distance]]  # reported after each run
