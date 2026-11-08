@@ -104,7 +104,8 @@ Komutlar proje kökünden, venv etkinken:
 - Önizleme: `python -m tools.preview` (`--duration N` süre sonunda özet yazar; `--no-window`, `--camera N`)
 - Oturum kaydı: `python -m tools.record --save` (tam ekran hedefler, `data/session_*/` altına `frames.npz` + `session.json`; `--save` olmadan hiçbir şey yazmaz, ham video hiç yazılmaz)
 - Testler: `python -m pytest`
-- Kalibrasyon, dry-run ve `--live`: Faz 1'de eklenecek.
+- Kalibrasyon ve doğrulama: `python -m tools.calibrate --user efsun` (`profiles/<kullanıcı>.yaml` yazar; imleç oynatmaz)
+- Dry-run ve `--live`: Faz 1'de eklenecek.
 
 Kamera ölçümü (HD Webcam, 2026-11-08, 30 sn): DSHOW + MJPG ile 1280×720, kamera 29,9 fps, işleme 29,0 fps; çıkarım p50 7,8 ms, kare → ekran p50 15,4 / p95 45,5 ms (sensör gecikmesi hariç). Pozlama kilidi tutarsız: `CAP_PROP_AUTO_EXPOSURE` ile manuel mod istendiğinde iki çalıştırmada parlaklık ~68'e düştü ve kilit geri alındı (119,9 ve 195,9'dan), ilk kayıtta ise değişmedi (203,0 → 203,1, `requested_unverified`). Kilidin gerçekten tutup tutmadığı bilinmiyor; her kaydın durumu `session.json` içindeki `camera` alanında. Otomatik odak kontrolü desteklenmiyor.
 

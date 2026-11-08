@@ -34,6 +34,8 @@ landmarks:
   ear_right: [33, 160, 158, 133, 153, 144]   # p1..p6
   iris_left: 473
   iris_right: 468
+  iris_width_left: [474, 476]    # opposite iris ring points, for the distance estimate
+  iris_width_right: [469, 471]
 
 preview:
   mirror: true
@@ -44,17 +46,28 @@ preview:
 
 screen:
   # Physical size and camera offset; measured once per machine.
-  width_mm: null
-  height_mm: null
+  width_mm: 340                # EDID value, rounded to whole cm
+  height_mm: 210
   camera_offset_mm: [0.0, 0.0] # camera position relative to top-center of the screen
 
 calibration:
-  points: 9                    # 13-16 for better accuracy
+  grid_cols: 3                 # 3x3 = 9 points; 13-16 for better accuracy
+  grid_rows: 3
+  margin_fraction: 0.1
+  countdown_s: 3
   seconds_per_point: 1.5
   discard_first_ms: 500        # saccade + settling
   smooth_pursuit_seconds: 8
-  validation_points: 5
+  smooth_pursuit_cycles: [1, 2]  # horizontal and vertical sine cycles over the path
+  pursuit_discard_first_ms: 500
+  use_pursuit: true
+  pursuit_weight: 1.0          # total pursuit weight relative to the total weight of the points
+  validation_positions: [[0.3, 0.3], [0.7, 0.3], [0.3, 0.7], [0.7, 0.7], [0.5, 0.3]]  # screen fractions, off the grid
+  validation_hit_box_px: 150   # Phase 1 exit target size
+  validation_min_hit_rate: 0.8 # decision gate: share of validation frames inside the box
   max_validation_error_deg: 3.0
+  features: [iris]             # groups: iris, pose, ear, distance
+  compare_features: [[iris], [iris, ear], [iris, pose], [iris, pose, distance]]  # reported after each run
   regressor: ridge             # ridge | poly2
   ridge_alpha: 1.0
   implicit:

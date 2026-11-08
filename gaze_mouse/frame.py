@@ -25,6 +25,8 @@ class FrameResult:
     face_transform: np.ndarray | None = None  # 4x4
     ear_left: float | None = None
     ear_right: float | None = None
+    gaze_features: np.ndarray | None = None  # layout in gaze.features.FEATURE_SLICES
+    distance_mm: float | None = None  # camera distance from iris size
     timings_ms: dict[str, float] = field(default_factory=dict)
 
     @property
