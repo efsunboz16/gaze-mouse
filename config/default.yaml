@@ -123,6 +123,16 @@ safety:
   corner_pause: true
   min_face_confidence: 0.5
 
+target_test:
+  trials: 12
+  button_px: 300               # Phase 1 exit target size
+  grid_cols: 3
+  grid_rows: 3
+  margin_fraction: 0.15        # keeps a 300 px button fully on a 1200 px high screen
+  trial_timeout_s: 15
+  countdown_s: 3
+  pass_hit_rate: 0.8
+
 recording:
   grid_cols: 3
   grid_rows: 3
