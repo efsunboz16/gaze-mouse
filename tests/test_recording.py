@@ -90,6 +90,9 @@ def test_recorder_fills_missing_faces_with_nan():
     assert arrays["blendshapes"][1].tolist() == pytest.approx([0.1, 0.2])
     assert np.isnan(arrays["ear_left"][0])
     assert arrays["face_transform"].shape == (2, 4, 4)
+    assert arrays["left_eye_center_camera_mm"].shape == (2, 3)
+    assert np.isnan(arrays["left_eye_center_camera_mm"][0]).all()
+    assert arrays["gaze_uncertainty"].shape == (2,)
     assert arrays["target_xy_px"].tolist() == [[100, 200], [100, 200]]
     assert arrays["ms_since_target_onset"].tolist() == pytest.approx([0.0, 1000.0])
 

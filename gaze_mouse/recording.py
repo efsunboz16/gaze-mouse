@@ -82,6 +82,11 @@ def _stack(rows: list[np.ndarray | None]) -> np.ndarray:
     return np.stack([blank if r is None else r for r in rows]).astype(np.float32)
 
 
+def _stack_fixed(rows: list[np.ndarray | None], shape: tuple[int, ...]) -> np.ndarray:
+    blank = np.full(shape, np.nan, dtype=np.float32)
+    return np.stack([blank if r is None else r for r in rows]).astype(np.float32)
+
+
 class SessionRecorder:
     def __init__(self) -> None:
         self._results: list[FrameResult] = []
@@ -109,6 +114,22 @@ class SessionRecorder:
             "landmarks": _stack([r.landmarks for r in results]),
             "blendshapes": _stack(blendshapes) if names else np.empty((len(results), 0), np.float32),
             "face_transform": _stack([r.face_transform for r in results]),
+            "left_eye_center_camera_mm": _stack_fixed(
+                [r.left_eye_center_camera_mm for r in results], (3,)
+            ),
+            "right_eye_center_camera_mm": _stack_fixed(
+                [r.right_eye_center_camera_mm for r in results], (3,)
+            ),
+            "left_gaze_direction_camera": _stack_fixed(
+                [r.left_gaze_direction_camera for r in results], (3,)
+            ),
+            "right_gaze_direction_camera": _stack_fixed(
+                [r.right_gaze_direction_camera for r in results], (3,)
+            ),
+            "gaze_uncertainty": np.array(
+                [np.nan if r.gaze_uncertainty is None else r.gaze_uncertainty for r in results],
+                dtype=np.float32,
+            ),
             "ear_left": np.array([np.nan if r.ear_left is None else r.ear_left for r in results], np.float32),
             "ear_right": np.array([np.nan if r.ear_right is None else r.ear_right for r in results], np.float32),
             "target_seq": np.array([t[0] for t in targets], dtype=np.int32),

@@ -5,6 +5,7 @@ __pycache__/
 models/
 data/
 profiles/
+config/camera_intrinsics.json
 *.onnx
 *.pt
 *.pth

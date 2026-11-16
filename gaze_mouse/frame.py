@@ -27,6 +27,13 @@ class FrameResult:
     ear_right: float | None = None
     gaze_features: np.ndarray | None = None  # layout in gaze.features.FEATURE_SLICES
     distance_mm: float | None = None  # camera distance from iris size
+    head_pose_camera_mm: np.ndarray | None = None  # 4x4 camera-to-face transform
+    left_eye_center_camera_mm: np.ndarray | None = None  # XYZ in camera coordinates
+    right_eye_center_camera_mm: np.ndarray | None = None  # XYZ in camera coordinates
+    left_gaze_direction_camera: np.ndarray | None = None  # unit XYZ direction
+    right_gaze_direction_camera: np.ndarray | None = None  # unit XYZ direction
+    gaze_uncertainty: float | None = None  # angular uncertainty in radians
+    screen_gaze_px: np.ndarray | None = None  # XY physical screen pixels
     timings_ms: dict[str, float] = field(default_factory=dict)
 
     @property

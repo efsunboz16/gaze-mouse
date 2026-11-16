@@ -138,4 +138,24 @@ class CalibrationProcedure:
             "distance_mm": np.array(
                 [np.nan if r[5].distance_mm is None else r[5].distance_mm for r in rows], np.float32
             ),
+            "left_eye_center_camera_mm": np.array(
+                [np.full(3, np.nan) if r[5].left_eye_center_camera_mm is None
+                 else r[5].left_eye_center_camera_mm for r in rows], np.float32
+            ),
+            "right_eye_center_camera_mm": np.array(
+                [np.full(3, np.nan) if r[5].right_eye_center_camera_mm is None
+                 else r[5].right_eye_center_camera_mm for r in rows], np.float32
+            ),
+            "left_gaze_direction_camera": np.array(
+                [np.full(3, np.nan) if r[5].left_gaze_direction_camera is None
+                 else r[5].left_gaze_direction_camera for r in rows], np.float32
+            ),
+            "right_gaze_direction_camera": np.array(
+                [np.full(3, np.nan) if r[5].right_gaze_direction_camera is None
+                 else r[5].right_gaze_direction_camera for r in rows], np.float32
+            ),
+            "gaze_uncertainty": np.array(
+                [np.nan if r[5].gaze_uncertainty is None else r[5].gaze_uncertainty for r in rows],
+                np.float32,
+            ),
         }

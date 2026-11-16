@@ -9,9 +9,9 @@ PyQt6
 pytest
 
 # Phase 3 (appearance-based gaze model)
-# onnxruntime
-# torch
-# torchvision
+onnxruntime
+# torch, torchvision, and onnxscript are only needed by tools/export_l2cs.py
+onnxscript
 
 # Phase 4 (snap-to-target on Windows)
 # uiautomation; sys_platform == "win32"

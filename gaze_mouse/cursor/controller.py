@@ -101,7 +101,13 @@ class PointerController:
         if ts < self._valid_after_ns:
             return PointerOutput("frozen", click=click)
 
-        raw = np.clip(self._model.predict(result.gaze_features[None])[0], self._low, self._high)
+        if result.screen_gaze_px is not None:
+            raw = result.screen_gaze_px
+        else:
+            if result.gaze_features is None:
+                return PointerOutput("no_face", click=click)
+            raw = self._model.predict(result.gaze_features[None])[0]
+        raw = np.clip(raw, self._low, self._high)
         self._history.add(ts, raw)
         x, y = self._filter.update(ts, raw)
         return PointerOutput("tracking", (int(round(x)), int(round(y))), click)

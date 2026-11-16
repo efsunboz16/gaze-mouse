@@ -17,6 +17,8 @@ camera:
   exposure_auto_value: 0.75    # CAP_PROP_AUTO_EXPOSURE value restoring auto mode
   exposure_lock_max_brightness_change: 0.25  # revert the lock if brightness shifts more than this ratio
   max_read_failures: 30        # consecutive failed reads before the capture thread gives up
+  intrinsics: null              # inline fallback; calibration output is preferred
+  intrinsics_path: config/camera_intrinsics.json         # e.g. config/camera_intrinsics.json
 
 landmarker:
   model_path: models/face_landmarker.task
@@ -26,6 +28,16 @@ landmarker:
   min_face_presence_confidence: 0.5
   min_tracking_confidence: 0.5
   iris_diameter_mm: 11.7       # used for camera-distance estimate
+
+gaze_model:
+  enabled: true
+  path: models/gaze.onnx              # requires a compatible ONNX model and onnxruntime
+  backend: l2cs                        # l2cs consumes exported L2CS-Net yaw/pitch logits
+  input_name: null
+  personal_calibration_path: null
+  color_order: RGB             # camera frames are BGR; backend converts to RGB
+  mean: [0.5, 0.5, 0.5]
+  std: [0.5, 0.5, 0.5]
 
 landmarks:
   # Left/right follow MediaPipe's FACE_LANDMARKS_LEFT/RIGHT_* constants.
@@ -46,9 +58,9 @@ preview:
 
 screen:
   # Physical size and camera offset; measured once per machine.
-  width_mm: 340                # EDID value, rounded to whole cm
-  height_mm: 210
-  camera_offset_mm: [0.0, 0.0] # camera position relative to top-center of the screen
+  width_mm: 350
+  height_mm: 215
+  camera_offset_mm: [0.0, 2.0] # camera position relative to top-center of the screen
 
 calibration:
   grid_cols: 3                 # 3x3 = 9 points; 13-16 for better accuracy

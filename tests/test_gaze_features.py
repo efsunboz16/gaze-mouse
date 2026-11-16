@@ -11,6 +11,7 @@ from gaze_mouse.gaze.features import (
     iris_offset,
     select_features,
 )
+from gaze_mouse.perception.camera_calibration import CameraIntrinsics
 
 CFG = {
     "ear_left": [0, 1, 2, 3, 4, 5], "ear_right": [6, 7, 8, 9, 10, 11],
@@ -65,6 +66,16 @@ def test_annotate_fills_feature_vector():
     assert np.allclose(result.gaze_features[:4], [0.25, 0.0, 0.25, 0.0], atol=1e-4)
     assert np.allclose(result.gaze_features[4:7], 0.0)
     assert math.isclose(result.distance_mm, 1000 * 11.7 / 10, rel_tol=1e-3)
+
+
+def test_annotate_fills_metric_eye_centers_when_intrinsics_are_available():
+    result = face_result()
+    extractor = GazeFeatureExtractor(
+        CFG, 11.7, CameraIntrinsics((1000.0, 1000.0), (500.0, 500.0))
+    )
+    extractor.annotate(result)
+    assert np.allclose(result.left_eye_center_camera_mm, [-432.9, -468.0, 1170.0])
+    assert np.allclose(result.right_eye_center_camera_mm, [-198.9, -468.0, 1170.0])
 
 
 def test_annotate_ignores_missing_face():

@@ -71,7 +71,11 @@ class CalibrationWindow(QWidget):
     def _draw_stimulus(self, painter: QPainter, stimulus: Stimulus) -> None:
         center = self.height() // 2
         if stimulus.phase == Phase.COUNTDOWN:
-            self._draw_text(painter, "Noktalara bak, nokta yer değiştirene kadar gözünü ayırma. Başını sabit tut.",
+            instruction = getattr(self._procedure, "pose_variant", None)
+            prompt = instruction.instruction if instruction is not None else (
+                "Noktalara bak, nokta yer değiştirene kadar gözünü ayırma. Başını sabit tut."
+            )
+            self._draw_text(painter, prompt,
                             center - 90, 20, _WHITE)
             self._draw_text(painter, f"{stimulus.countdown}", center - 20, 40, _WHITE)
             self._draw_text(painter, "Esc: iptal", center + 80, 14, _AMBER)

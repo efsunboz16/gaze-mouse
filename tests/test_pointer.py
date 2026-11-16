@@ -173,6 +173,13 @@ def test_tracking_moves_cursor():
     assert output.status == "tracking" and output.cursor == (500, 400) and output.click is None
 
 
+def test_screen_projection_is_preferred_over_v1_features():
+    result = frame(0, xy=(500.0, 400.0))
+    result.screen_gaze_px = np.array([1200.0, 800.0])
+
+    assert controller().update(result).cursor == (1200, 800)
+
+
 def test_gaze_is_clamped_outside_the_corner_area():
     assert controller().update(frame(0, xy=(-50.0, 5000.0))).cursor == (6, 1193)
 

@@ -8,6 +8,8 @@ import numpy as np
 
 from gaze_mouse.eyelid.features import EyeLandmarkMap, compute_ears, to_pixels
 from gaze_mouse.frame import FrameResult
+from gaze_mouse.perception.camera_calibration import CameraIntrinsics
+from gaze_mouse.perception.head_pose import pixel_to_camera_point
 
 FEATURE_SLICES = {
     "iris": slice(0, 4),  # left dx, dy, right dx, dy; relative to eye center, per eye width
@@ -47,10 +49,16 @@ def distance_from_iris(iris_width_px: float, focal_px: float, iris_diameter_mm: 
 
 
 class GazeFeatureExtractor:
-    def __init__(self, landmarks_cfg: dict[str, Any], iris_diameter_mm: float):
+    def __init__(
+        self,
+        landmarks_cfg: dict[str, Any],
+        iris_diameter_mm: float,
+        camera_intrinsics: CameraIntrinsics | None = None,
+    ):
         self._eye_map = EyeLandmarkMap.from_config(landmarks_cfg)
         self._width_pairs = (tuple(landmarks_cfg["iris_width_left"]), tuple(landmarks_cfg["iris_width_right"]))
         self._iris_mm = iris_diameter_mm
+        self._camera_intrinsics = camera_intrinsics
 
     def annotate(self, result: FrameResult) -> None:
         """Fill pixel points, EAR, distance and the gaze feature vector for a detected face."""
@@ -64,6 +72,13 @@ class GazeFeatureExtractor:
         widths = [float(np.linalg.norm(pts[a] - pts[b])) for a, b in self._width_pairs]
         # Without camera intrinsics fx is approximated by the image width (report, M1).
         result.distance_mm = distance_from_iris(sum(widths) / 2, float(result.width), self._iris_mm)
+        if self._camera_intrinsics is not None and result.distance_mm is not None:
+            result.left_eye_center_camera_mm = pixel_to_camera_point(
+                pts[m.iris_left], result.distance_mm, self._camera_intrinsics
+            )
+            result.right_eye_center_camera_mm = pixel_to_camera_point(
+                pts[m.iris_right], result.distance_mm, self._camera_intrinsics
+            )
 
         if result.face_transform is None:
             return
